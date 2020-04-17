@@ -25,18 +25,18 @@ ltd_count_num <- function(latitude,longitude,keyword,radius){
 
 # Function for find town place function
 ltd_town_find <- function(latitude,longitude){
-  urls <- paste0("https://maps.googleapis.com/maps/api/geocode/json?latlng=",latitude,",",longitude,"&language=zh-TW&key=AIzaSyAb9IrdXcIaqOBT35bCWhgBO6J36yd7mXk&fbclid=IwAR1ruO5pKEYtG4C1x335oY3cByVSQwMTc1fUgUDtEZ1ri-onAuaFn3mn71g")
+  urls <- paste0("https://maps.googleapis.com/maps/api/geocode/xml?latlng=",latitude,",",longitude,"&language=zh-TW&key=AIzaSyAb9IrdXcIaqOBT35bCWhgBO6J36yd7mXk&fbclid=IwAR1ruO5pKEYtG4C1x335oY3cByVSQwMTc1fUgUDtEZ1ri-onAuaFn3mn71g")
   id_link <- read_html(urls)
-  my.df <- fromJSON(html_text(id_link))
-  return(substring(my.df$results$formatted_address[4], 9, 11))
+  nodes <- html_nodes(id_link,"result address_component")
+  return(html_text(html_nodes(nodes[grep("administrative_area_level_3",html_text(nodes))],"short_name"))[1])
 }
 
 # Function for find village place
 ltd_vill_find <- function(latitude,longitude){
-  urls <- paste0("https://maps.googleapis.com/maps/api/geocode/json?latlng=",latitude,",",longitude,"&language=zh-TW&key=AIzaSyAb9IrdXcIaqOBT35bCWhgBO6J36yd7mXk&fbclid=IwAR1ruO5pKEYtG4C1x335oY3cByVSQwMTc1fUgUDtEZ1ri-onAuaFn3mn71g")
+  urls <- paste0("https://maps.googleapis.com/maps/api/geocode/xml?latlng=",latitude,",",longitude,"&language=zh-TW&key=AIzaSyAb9IrdXcIaqOBT35bCWhgBO6J36yd7mXk&fbclid=IwAR1ruO5pKEYtG4C1x335oY3cByVSQwMTc1fUgUDtEZ1ri-onAuaFn3mn71g")
   id_link <- read_html(urls)
-  my.df <- fromJSON(html_text(id_link))
-  return(substring(my.df$results$formatted_address[4], 12, 15))
+  nodes <- html_nodes(id_link,"result address_component")
+  return(html_text(html_nodes(nodes[grep("administrative_area_level_4",html_text(nodes))],"short_name"))[1])
 }
 
 
@@ -71,6 +71,7 @@ get_town_ltd <- function(city,town,distance){
 # Function for calculate the town informations
 town_ltd_info <- function(city,town,distance,num1,num2,num3,num4,num5,num6,num7){
   a <- get_town_ltd(city,town,distance)
+  village <- vector()
   clinc <- vector()
   hospital <- vector()
   hospital_center <- vector()
@@ -80,6 +81,7 @@ town_ltd_info <- function(city,town,distance,num1,num2,num3,num4,num5,num6,num7)
   bus_stop <- vector()
   t1<-Sys.time()
   for(i in c(1:nrow(a))){
+    village[i] <- ltd_vill_find(a$Var1[i],a$Var2[i])
     clinc[i] <- ltd_count_num(a$Var1[i],a$Var2[i],"clinic",num1)
     hospital[i] <- ltd_count_num(a$Var1[i],a$Var2[i],"hospital",num2)
     hospital_center[i] <- ltd_count_num(a$Var1[i],a$Var2[i],"hospital center",num3)
@@ -92,6 +94,7 @@ town_ltd_info <- function(city,town,distance,num1,num2,num3,num4,num5,num6,num7)
     print(paste0("Completion:",i/nrow(a),". Time cost:",time))
   }
   town_info <- a
+  town_info['village'] <- village
   town_info['clinc'] = clinc
   town_info['hospital'] = hospital
   town_info['hospital_center'] = hospital_center
