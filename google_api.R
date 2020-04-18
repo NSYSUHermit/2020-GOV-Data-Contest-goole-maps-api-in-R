@@ -13,6 +13,7 @@ json <- import("json")
 gmaps = googlemaps$Client(key='AIzaSyAb9IrdXcIaqOBT35bCWhgBO6J36yd7mXk')
 
 
+
 ##########################funcion def######################################
 
 # Function for count place 
@@ -94,6 +95,7 @@ town_ltd_info <- function(city,town,distance,num1,num2,num3,num4,num5,num6,num7)
     print(paste0("Completion:",i/nrow(a),". Time cost:",time))
   }
   town_info <- a
+  town_info['city'] <- city
   town_info['village'] <- village
   town_info['clinc'] = clinc
   town_info['hospital'] = hospital
@@ -102,5 +104,12 @@ town_ltd_info <- function(city,town,distance,num1,num2,num3,num4,num5,num6,num7)
   town_info['library'] = library
   town_info['mrt_station'] = mrt_station
   town_info['bus_stop'] = bus_stop
-  return(town_info)
+  dep <- read.csv("2020Data_final.csv")
+  dep <- dep[,-c(1,2,4,5)]
+  dep['village'] <- dep[,2]
+  dep['city'] <- dep[,1]
+  dep <- dep[,-c(1,2)]
+  df <- merge(town_info, dep)
+  
+  return(df)
 }
