@@ -3,6 +3,7 @@ library(reticulate)
 library(xml2)
 library(rvest)
 library(jsonlite)
+library(sf)
 
 np <- import("numpy")
 googlemaps <- import("googlemaps")
@@ -15,6 +16,16 @@ gmaps = googlemaps$Client(key='AIzaSyAb9IrdXcIaqOBT35bCWhgBO6J36yd7mXk')
 
 
 ##########################funcion def######################################
+# Function for min.max normalize
+nor.min.max <- function(x) {
+  if (is.numeric(x) == FALSE) {
+    stop("Please input numeric for x")
+  }
+  x.min <- min(x)
+  x.max <- max(x)
+  x <- (x - x.min) / (x.max - x.min)
+  return (x)
+}
 
 # Function for count place 
 ltd_count_num <- function(latitude,longitude,keyword,radius){
@@ -23,6 +34,13 @@ ltd_count_num <- function(latitude,longitude,keyword,radius){
   return(length(query_result$results))
 }
 
+# Function for find locate lon&lan function
+find_ltd <- function(locate){
+  urls <- paste0("https://maps.googleapis.com/maps/api/geocode/xml?address=",locate,"&language=zh-TW&key=AIzaSyAb9IrdXcIaqOBT35bCWhgBO6J36yd7mXk&fbclid=IwAR1ruO5pKEYtG4C1x335oY3cByVSQwMTc1fUgUDtEZ1ri-onAuaFn3mn71g")
+  id_link <- read_html(urls)
+  lat_lon <- c(as.numeric(html_text(html_nodes(id_link,"geometry location lat"))),as.numeric(html_text(html_nodes(id_link,"geometry location lng"))))
+  return(lat_lon)
+}
 
 # Function for find town place function
 ltd_town_find <- function(latitude,longitude){
@@ -40,10 +58,15 @@ ltd_vill_find <- function(latitude,longitude){
   return(html_text(html_nodes(nodes[grep("administrative_area_level_4",html_text(nodes))],"short_name"))[1])
 }
 
+# Function for get the boundary ltds of town
+get_bound_ltd <- function(city,town){
+  ltd = read_sf("./TOWN_MOI_1090324.shp")
+  d = ltd[which(ltd$COUNTYNAME== city & ltd$TOWNNAME == town),][[8]][[1]][[1]][[1]]
+  return(as.data.frame(d))
+}
 
 # Function for calculate the town ltds
 get_town_ltd <- function(city,town,distance){
-  library(sf)
   ltd = read_sf("./TOWN_MOI_1090324.shp")
   ## lat & lon difference setting 
   lat_d = distance*0.000009090909
@@ -112,4 +135,52 @@ town_ltd_info <- function(city,town,distance,num1,num2,num3,num4,num5,num6,num7)
   df <- merge(town_info, dep)
   
   return(df)
+}
+
+# Function for draw the results
+town_location_draw <- function(city,town,distance,num1,num2,num3,num4,num5,num6,num7){
+  library(dplyr)
+  library(leaflet)
+  library(purrr)
+  library(BBmisc)
+  ltd = read_sf("./TOWN_MOI_1090324.shp")
+  df3 <- town_ltd_info(city,town,distance,num1,num2,num3,num4,num5,num6,num7)
+  bdd <- get_bound_ltd(city,town)
+  df3$info <- paste(sep = "<br/>",
+                    "診所個數:",df3$clinc,
+                    "地區醫院個數:",df3$hospital,
+                    "醫學中心個數:",df3$hospital_center,
+                    "公園個數:",df3$park,
+                    "圖書館個數:",df3$library,
+                    "捷運站出口個數:",df3$mrt_station,
+                    "公車站牌個數:",df3$bus_stop,
+                    "110老化指數:",df3[,46])
+  lat_d = distance*0.000009090909
+  lon_d = distance*0.00001
+  leaflet(df3) %>% addTiles() %>%
+    addPolygons(lng = bdd$V1,
+                lat = bdd$V2,
+                fillOpacity = 0,
+                weight = 1,
+                color = "red",
+                popup = ~as.factor(df3$city))%>%
+    #setView(lng=find_ltd(locate)[2],lat=find_ltd(locate)[1],zoom=14)%>%
+    addMarkers(lng = ~Var2, lat = ~Var1,popup = ~as.factor(df3$village),clusterOptions = markerClusterOptions())%>%
+    addRectangles(
+      lng1=~Var2-lon_d/2, lat1=~Var1-lat_d/2,
+      lng2=~Var2+lon_d/2, lat2=~Var1+lat_d/2,
+      fillOpacity = nor.min.max(rowSums(scale(df3[,c(3:11,46)])))*0.8+0.1,
+      color = "green",#關於線條的顏色
+      stroke = FALSE,
+      group = NULL,
+      popup = ~as.factor(df3$info)#%>%
+    # addCircles(lng = ~Var2, lat = ~Var1, 
+    #            radius = distance/2, 
+    #            fillOpacity = nor.min.max(rowSums(scale(df3[,c(3:11,46)])))*0.8+0.1,
+    #            color = "green",#關於線條的顏色
+    #            stroke = FALSE,
+    #            group = NULL,
+    #            popup = ~as.factor(df3$info)
+    )
+  #return(leaflet)
 }
