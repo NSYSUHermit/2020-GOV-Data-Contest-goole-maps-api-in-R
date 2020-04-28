@@ -11,9 +11,7 @@ pd <- import("pandas")
 time <- import("time")
 requests <- import("requests")
 json <- import("json")
-gmaps = googlemaps$Client(key='AIzaSyAb9IrdXcIaqOBT35bCWhgBO6J36yd7mXk')
-
-
+gmaps = googlemaps$Client(key='AIzaSyDQ6gJ0GXB5gda8UnCn7h_2SP9FNEr16bQ')
 
 ##########################funcion def######################################
 # Function for min.max normalize
@@ -27,6 +25,13 @@ nor.min.max <- function(x) {
   return (x)
 }
 
+# Function to find nearest land price
+near_price <- function(latitude,longitude){
+  price <- read.csv("DATA_house.csv")
+  ltd <- find_ltd()
+  return (x)
+}
+
 # Function for count place 
 ltd_count_num <- function(latitude,longitude,keyword,radius){
   # Geocoding an address        
@@ -36,15 +41,26 @@ ltd_count_num <- function(latitude,longitude,keyword,radius){
 
 # Function for find locate lon&lan function
 find_ltd <- function(locate){
-  urls <- paste0("https://maps.googleapis.com/maps/api/geocode/xml?address=",locate,"&language=zh-TW&key=AIzaSyAb9IrdXcIaqOBT35bCWhgBO6J36yd7mXk&fbclid=IwAR1ruO5pKEYtG4C1x335oY3cByVSQwMTc1fUgUDtEZ1ri-onAuaFn3mn71g")
+  urls <- paste0("https://maps.googleapis.com/maps/api/geocode/xml?address=",locate,"&language=zh-TW&key=AIzaSyDQ6gJ0GXB5gda8UnCn7h_2SP9FNEr16bQ")
   id_link <- read_html(urls)
   lat_lon <- c(as.numeric(html_text(html_nodes(id_link,"geometry location lat"))),as.numeric(html_text(html_nodes(id_link,"geometry location lng"))))
   return(lat_lon)
 }
 
+# Function for find ltd house price
+latlng_price <- function(lat1,lon1,city){
+  price <- read.csv("house_price.csv")
+  price_use <- price[which(price[,9] == city),]
+  lat2 = price_use$lat
+  lon2 = price_use$lon
+  price_use$d = (lat1-lat2)^2+(lon1-lon2)^2
+  price_use <- price_use[order(price_use$d),]
+  return(mean(sort(price_use$"單價元平方公尺"[1:10])[3:8]))
+}
+
 # Function for find town place function
 ltd_town_find <- function(latitude,longitude){
-  urls <- paste0("https://maps.googleapis.com/maps/api/geocode/xml?latlng=",latitude,",",longitude,"&language=zh-TW&key=AIzaSyAb9IrdXcIaqOBT35bCWhgBO6J36yd7mXk&fbclid=IwAR1ruO5pKEYtG4C1x335oY3cByVSQwMTc1fUgUDtEZ1ri-onAuaFn3mn71g")
+  urls <- paste0("https://maps.googleapis.com/maps/api/geocode/xml?latlng=",latitude,",",longitude,"&language=zh-TW&key=AIzaSyDQ6gJ0GXB5gda8UnCn7h_2SP9FNEr16bQ")
   id_link <- read_html(urls)
   nodes <- html_nodes(id_link,"result address_component")
   return(html_text(html_nodes(nodes[grep("administrative_area_level_3",html_text(nodes))],"short_name"))[1])
@@ -52,7 +68,7 @@ ltd_town_find <- function(latitude,longitude){
 
 # Function for find village place
 ltd_vill_find <- function(latitude,longitude){
-  urls <- paste0("https://maps.googleapis.com/maps/api/geocode/xml?latlng=",latitude,",",longitude,"&language=zh-TW&key=AIzaSyAb9IrdXcIaqOBT35bCWhgBO6J36yd7mXk&fbclid=IwAR1ruO5pKEYtG4C1x335oY3cByVSQwMTc1fUgUDtEZ1ri-onAuaFn3mn71g")
+  urls <- paste0("https://maps.googleapis.com/maps/api/geocode/xml?latlng=",latitude,",",longitude,"&language=zh-TW&key=AIzaSyDQ6gJ0GXB5gda8UnCn7h_2SP9FNEr16bQ")
   id_link <- read_html(urls)
   nodes <- html_nodes(id_link,"result address_component")
   return(html_text(html_nodes(nodes[grep("administrative_area_level_4",html_text(nodes))],"short_name"))[1])
@@ -127,13 +143,16 @@ town_ltd_info <- function(city,town,distance,num1,num2,num3,num4,num5,num6,num7)
   town_info['library'] = library
   town_info['mrt_station'] = mrt_station
   town_info['bus_stop'] = bus_stop
+  # combine the population data
   dep <- read.csv("2020Data_final.csv")
   dep <- dep[,-c(1,2,4,5)]
   dep['village'] <- dep[,2]
   dep['city'] <- dep[,1]
   dep <- dep[,-c(1,2)]
   df <- merge(town_info, dep)
-  
+  # combine the house prices data
+  df$price <- 0
+  for(j in c(1:nrow(df))){df$price[j] <- latlng_price(df$Var1[j],df$Var2[j],df$city[j])}
   return(df)
 }
 
