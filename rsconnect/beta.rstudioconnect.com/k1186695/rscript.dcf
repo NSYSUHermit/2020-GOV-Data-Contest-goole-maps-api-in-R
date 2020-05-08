@@ -1,0 +1,14 @@
+name: rscript
+title: rscript
+username: k1186695
+account: k1186695
+server: beta.rstudioconnect.com
+hostUrl: https://beta.rstudioconnect.com/__api__
+appId: 10730
+bundleId: 25755
+url: https://beta.rstudioconnect.com/content/10730/
+when: 1588838048.57326
+lastSyncTime: 1588838048.57326
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: 2020Data_final.csv|house_price1.csv|TOWN_MOI_1090324.dbf|TOWN_MOI_1090324.prj|TOWN_MOI_1090324.shp|TOWN_MOI_1090324.shx
