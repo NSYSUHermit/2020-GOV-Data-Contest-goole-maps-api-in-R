@@ -1,26 +1,8 @@
-#options(shiny.usecairo = FALSE)
-source("D:/$/data/rscript/google_api.R", encoding = "utf-8")
-#source("google_api.R", encoding = "utf-8")
-#options(encoding = "UTF-8")
+source("google_api.R", encoding = "utf-8")
 library(leaflet)
 library(stringr)
 library(tidyr)
-
-# font_home <- function(path = '') file.path('~', '.fonts', path)
-# if (Sys.info()[['sysname']] == 'Linux' &&
-#     system('locate wqy-zenhei.ttc') != 0 &&
-#     !file.exists(font_home('wqy-zenhei.ttc'))) {
-#     if (!file.exists('wqy-zenhei.ttc'))
-#         shiny:::download(
-#             'https://github.com/rstudio/shiny-examples/releases/download/v0.10.1/wqy-zenhei.ttc',
-#             'wqy-zenhei.ttc'
-#         )
-#     dir.create(font_home())
-#     file.copy('wqy-zenhei.ttc', font_home())
-#     system2('fc-cache', paste('-f', font_home()))
-# }
-# rm(font_home)
-
+library(shinycssloaders)
 
 function(input, output,session) {
     df3 = eventReactive(input$action,{
@@ -28,8 +10,9 @@ function(input, output,session) {
             bdd =get_bound_ltd(city,input$select1)
             df3 = town_ltd_info(city,input$select1,input$num8,
                                 as.numeric(input$num1),as.numeric(input$num2),as.numeric(input$num3),as.numeric(input$num4),
-                                as.numeric(input$num5),as.numeric(input$num6),as.numeric(input$num7),as.numeric(input$num9))%>%na.omit()
-            print(df3[1:3,])
+                                as.numeric(input$num5),as.numeric(input$num6),as.numeric(input$num7),as.numeric(input$num9))
+            if(any(is.na(df3))==TRUE){df3 = na.omit(df3)}
+            print(df3)
             df3 = df3[,c(1:12,which(str_detect(colnames(df3),str_sub(input$radio,1,3))))]
             if(input$radio == 1){df3 = df3[,-13]}
             df3 = df3[which(df3$clinc>=input$slider1),]
@@ -41,30 +24,33 @@ function(input, output,session) {
             df3 = df3[which(df3$bus_stop>=input$slider7),]
             df3 = df3[which(input$slider9>=df3$nursing),]
             print(1)
-            print(df3[1:3,])
-            if(nrow(df3)==0){output$value = renderPrint("<font size='4'><font color='red'>請降低條件</font></font><br/>")}
-            print(df3[1:3,])
+            print(df3)
+            if(nrow(df3)==0){
+                output$value = renderText({"請降低條件"})
+                }
+            print(df3)
             df3$num = apply(data.frame(1:nrow(df3)),1,function(x){return(latlng_price(df3$Var1[x],df3$Var2[x],city)/10000)})
             print(2)
-            print(df3[1:3,])
-            #df3 = df3[-is.na(df3$Var1),]
+            print(df3)
+            if(any(is.na(df3))==TRUE){df3 = na.omit(df3)}
             if(max(input$num10)!=0 & nrow(df3)>1){
                 df3 = df3[which(df3$num >=min(input$num10) & max(input$num10) >=df3$num),]
-                df3$index <- rowSums(0.2*(apply(df3[,5:11],2,nor.min.max)%>%t%>%na.omit()%>%t)+(0.2*nor.min.max(df3[,17])+0.8*nor.min.max(df3[,15]))*0.25-0.35*nor.min.max(df3$num))
+                df3$index <- 0.2*(nor.min.max(rowSums(df3[,5:11])))+(0.2*nor.min.max(df3[,17])+0.8*nor.min.max(df3[,15]))*0.25-0.35*nor.min.max(df3$num)
             }else if(nrow(df3)>1 & max(input$num10)==0){
-                df3$index <- rowSums(0.2*(apply(df3[,5:11],2,nor.min.max)%>%t%>%na.omit()%>%t)+(0.2*nor.min.max(df3[,17])+0.8*nor.min.max(df3[,15]))*0.25)
+                df3$index <- 0.2*(nor.min.max(rowSums(df3[,5:11])))+(0.2*nor.min.max(df3[,17])+0.8*nor.min.max(df3[,15]))*0.25
             }else if(nrow(df3)==1){
                 df3$index = 0.5
             }
-            print(df3[1:3,])
+            print(df3)
             if(max(df3$nursing)!=0 & nrow(df3)>1){
-                df3$index = round(df3$index - 0.2*nor.min.max(df3$nursing)%>%t%>%na.omit()%>%t,2)
-                df3$index = nor.min.max(df3$index)*0.8+0.05
-            }else if(max(df3$nursing)==0 & nrow(df3)>1){
-                df3$index = nor.min.max(df3$index)*0.8+0.05
+                df3$index = round(df3$index - 0.2*nor.min.max(df3$nursing),2)
             }
-            print(df3[1:3,])
-            df3$index = round(df3$index,2)
+            if(length(df3$index<0)>0){
+                df3$index = df3$index+abs(min(df3$index))+0.05
+                df3$index = ifelse(df3$index>1,1,df3$index)
+                df3$index = round(df3$index,2)
+            }
+            print(df3)
             df3$info <- paste0("<font size='4'><font color='red'>選址條件指數: ",df3$index,"</font></font><br/>")
             df3$info <- paste0(df3$info,"區域:",df3$village,"<br/>")
             if(input$num1 != 0){df3$info <- paste0(df3$info,"診所個數: ",df3$clinc,"<br/>")}
@@ -90,12 +76,7 @@ function(input, output,session) {
         bdd =get_bound_ltd(as.character(city$city[which(city$num ==input$select)]),input$select1)
         return(bdd)
         })
-    #output$value = renderPrint({df3()$index})
-    output$wait = eventReactive(input$action,{
-        img(src="giphy.gif",align = "right",height="250px",width = '500px')
-    })
     output$leaf = renderLeaflet({
-        #rc1 <- colorRampPalette(colors = c("red", "white"), space = "Lab")(50)
         rc2 <- colorRampPalette(colors = c("#52B74B","#FF0000"), space = "Lab")(20)
         ## Combine the two color palettes
         #rampcols <- c(rc1, rc2)
@@ -143,7 +124,7 @@ function(input, output,session) {
                checkboxInput(label = '必要條件',paste0('c10')),
                conditionalPanel(
                    condition =  "input.c10==1",
-                   numericRangeInput("num10", label = h4(paste0("地價容許範圍(單位:萬/坪)")),value=c(1,20))
+                   numericRangeInput("num10", label = h4(paste0("地價容許範圍(單位:萬/坪)")),value=c(0,0))
         ))
     })
     output$input_value3 <- renderUI({

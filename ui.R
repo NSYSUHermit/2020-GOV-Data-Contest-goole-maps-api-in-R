@@ -1,21 +1,3 @@
-#options(shiny.usecairo = FALSE)
-
-#options(encoding = "UTF-8")
-# font_home <- function(path = '') file.path('~', '.fonts', path)
-# if (Sys.info()[['sysname']] == 'Linux' &&
-#     system('locate wqy-zenhei.ttc') != 0 &&
-#     !file.exists(font_home('wqy-zenhei.ttc'))) {
-#     if (!file.exists('wqy-zenhei.ttc'))
-#         shiny:::download(
-#             'https://github.com/rstudio/shiny-examples/releases/download/v0.10.1/wqy-zenhei.ttc',
-#             'wqy-zenhei.ttc'
-#         )
-#     dir.create(font_home())
-#     file.copy('wqy-zenhei.ttc', font_home())
-#     system2('fc-cache', paste('-f', font_home()))
-# }
-# rm(font_home)
-
 library(shiny)
 library(shinythemes)
 library(shinyjs)
@@ -32,7 +14,7 @@ fluidPage(
             width = 3,
             fluidRow(column(10, 
             radioButtons("radio", label = h3("選擇年度"),
-                         c("104年"=1, "105年", "106年","107年","108年","109年(預測)","110年(預測)"), selected = 1),
+                         c("104年"=1, "105年", "106年","107年","108年","109年(預測)","110年(預測)"), selected = 1)
             # sliderInput("slider11", label = h3(paste0("該區域扶老比至少幾%")),min = 0,max = 100, value = 0),
             # sliderInput("slider12", label = h3(paste0("該區域扶兒比至少幾%")),min = 0,max = 100, value = 0),
             )),
@@ -62,9 +44,13 @@ fluidPage(
             actionButton("action", "點我進行分析",class = "btn-primary")
         ),
         mainPanel(
-            imageOutput("wait"),
-            verbatimTextOutput("value"),
-            leafletOutput(outputId = "leaf",width = "113%",height = 1150)
+            textOutput("value"),
+            tags$head(tags$style("#value{color: red;
+                                 font-size: 100px;
+                                 font-style: italic;
+                                 }"
+            )),
+            leafletOutput(outputId = "leaf",width = "113%",height = 1150)%>% withSpinner()
             
         )
     )

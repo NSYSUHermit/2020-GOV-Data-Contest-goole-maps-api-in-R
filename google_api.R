@@ -10,6 +10,8 @@ apiKey ="AIzaSyBwMa0N_fzP9WtCPpVufYzBfcMi6etyTMQ"
 googlemaps <- import("googlemaps")
 gmaps = googlemaps$Client(key=apiKey)
 
+#AIzaSyBV6m3HPDkUHfn46FxmZEUZhbpyQal0-5E
+
 #ltd = read_sf("D:/$/data/rscript/TOWN_MOI_1090324.shp")
 ltd = readRDS("ltd.rds")
 #price = fread("D:/$/data/rscript/house_price1.csv")[,c(6:9,11)]
@@ -33,7 +35,11 @@ nor.min.max <- function(x) {
   }
   x.min <- min(x)
   x.max <- max(x)
-  x <- (x - x.min) / (x.max - x.min)
+  if(min(x) !=max(x)){
+    x <- (x - min(x)) / (max(x) - min(x))
+  }else{
+    x = 0.5
+  }
   return (x)
 }
 
@@ -143,13 +149,12 @@ town_ltd_info <- function(city,town,distance,num1,num2,num3,num4,num5,num6,num7,
   town_info['bus_stop'] = bus_stop
   town_info$nursing =nursing
   
-  #dep <- read.csv("D:/$/data/rscript/2020Data_final.csv")
+  #dep1 <- read.csv("E:/rscript/2020Data_final.csv")
   dep = readRDS("dep.rds")
-  dep <- dep[,-c(1,2,4,5)]
-  dep['village'] <- dep[,2]
-  dep['city'] <- dep[,1]
-  #colnames(dep)[1:2] = c('city','village')
-  dep <- dep[,-c(1,2)]
+  #dep <- dep[,-c(1,2,4,5)]
+  #dep['village'] <- dep[,2]
+  #dep['city'] <- dep[,1]
+  #dep <- dep[,-c(1,2)]
   df <- merge(town_info, dep)
   return(df)
 }
