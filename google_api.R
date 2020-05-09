@@ -4,12 +4,10 @@ library(xml2)
 library(rvest)
 library(jsonlite)
 library(sf)
-library(geosphere)
-library(googleway)
 library(shinyWidgets)
 library(data.table)
 apiKey ="AIzaSyBwMa0N_fzP9WtCPpVufYzBfcMi6etyTMQ"
-googlemaps <- import_from_path("googlemaps",path = "C:/Users/m48m0/.conda/envs/pytorch/Lib/site-packages")
+googlemaps <- import("googlemaps")
 gmaps = googlemaps$Client(key=apiKey)
 
 #ltd = read_sf("D:/$/data/rscript/TOWN_MOI_1090324.shp")
